@@ -174,8 +174,8 @@ public class AuthUI {
     }
 
     /**
-     * Default theme used by {@link SignInIntentBuilder#setTheme(int)} if no theme customization is
-     * required.
+     * Default theme used by {@link FlowDisplayOptions.Builder#setTheme(int)} if no theme
+     * customization is required.
      */
     @StyleRes
     public static int getDefaultTheme() {
@@ -486,7 +486,6 @@ public class AuthUI {
             super(FACEBOOK_PROVIDER, scopes, params);
         }
 
-
         public static class Builder extends IdpConfig.Builder<FacebookIdpConfig.Builder> {
 
             public Builder() {
@@ -641,7 +640,10 @@ public class AuthUI {
         /**
          * Specifies the theme to use for the application flow. If no theme is specified, a default
          * theme will be used.
+         *
+         * @deprecated in favor of {@link FlowDisplayOptions.Builder#setTheme(int)}
          */
+        @Deprecated
         public T setTheme(@StyleRes int theme) {
             Preconditions.checkValidStyle(
                     mApp.getApplicationContext(),
@@ -654,7 +656,10 @@ public class AuthUI {
         /**
          * Specifies the logo to use for the {@link AuthMethodPickerActivity}. If no logo is
          * specified, none will be used.
+         *
+         * @deprecated in favor of {@link FlowDisplayOptions.Builder#setLogo(int)}
          */
+        @Deprecated
         public T setLogo(@DrawableRes int logo) {
             mLogo = logo;
             return (T) this;
@@ -662,7 +667,10 @@ public class AuthUI {
 
         /**
          * Specifies the terms-of-service URL for the application.
+         *
+         * @deprecated in favor of {@link FlowDisplayOptions.Builder#setTosUrl(String)}
          */
+        @Deprecated
         public T setTosUrl(@Nullable String tosUrl) {
             mTosUrl = tosUrl;
             return (T) this;
@@ -670,7 +678,10 @@ public class AuthUI {
 
         /**
          * Specifies the privacy policy URL for the application.
+         *
+         * @deprecated in favor of {@link FlowDisplayOptions.Builder#setPrivacyPolicyUrl(String)}
          */
+        @Deprecated
         public T setPrivacyPolicyUrl(@Nullable String privacyPolicyUrl) {
             mPrivacyPolicyUrl = privacyPolicyUrl;
             return (T) this;
