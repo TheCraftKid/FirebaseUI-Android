@@ -284,9 +284,9 @@ public class AuthUI {
      * new IdpConfig.Builder(AuthUI.GOOGLE_PROVIDER).build()}
      */
     public static class IdpConfig implements Parcelable {
-        private final String mProviderId;
-        private final List<String> mScopes;
-        private final Bundle mParams;
+        final String mProviderId;
+        final List<String> mScopes;
+        final Bundle mParams;
 
         private IdpConfig(
                 @SupportedProvider @NonNull String providerId,
@@ -364,10 +364,10 @@ public class AuthUI {
                     '}';
         }
 
-        public static class Builder {
+        public static class Builder<T extends IdpConfig.Builder> {
             @SupportedProvider private String mProviderId;
-            private List<String> mScopes = new ArrayList<>();
-            private Bundle mParams = new Bundle();
+            List<String> mScopes = new ArrayList<>();
+            Bundle mParams = new Bundle();
 
             /**
              * Builds the configuration parameters for an identity provider.
@@ -378,7 +378,7 @@ public class AuthUI {
              */
             public Builder(@SupportedProvider @NonNull String providerId) {
                 if (!SUPPORTED_PROVIDERS.contains(providerId)) {
-                    throw new IllegalArgumentException("Unkown provider: " + providerId);
+                    throw new IllegalArgumentException("Unknown provider: " + providerId);
                 }
                 mProviderId = providerId;
             }
@@ -397,18 +397,228 @@ public class AuthUI {
              * Twitter permissions are only configurable through the
              * <a href="https://apps.twitter.com/">Twitter developer console</a>.
              */
-            public Builder setPermissions(List<String> permissions) {
+            public Builder<T> setPermissions(List<String> permissions) {
                 mScopes = permissions;
                 return this;
             }
 
-            public Builder setParams(Bundle params) {
+            public Builder<T> setParams(Bundle params) {
                 mParams = params;
+                return this;
+            }
+
+            public Builder<T> setScopes(List<String> scopes) {
+                mScopes = scopes;
                 return this;
             }
 
             public IdpConfig build() {
                 return new IdpConfig(mProviderId, mScopes, mParams);
+            }
+        }
+    }
+
+    public static class EmailIdpConfig extends IdpConfig {
+
+        private boolean mRequestNameUponSignUp;
+
+        private EmailIdpConfig(@NonNull String providerId, List<String> scopes, Bundle params) {
+            super(providerId, scopes, params);
+        }
+
+        public void setShouldRequestNameOnSignUp(boolean enabled) {
+            mRequestNameUponSignUp = enabled;
+        }
+
+        public boolean shouldRequestNameOnSignUp() {
+            return mRequestNameUponSignUp;
+        }
+
+        public static class Builder extends IdpConfig.Builder<EmailIdpConfig.Builder> {
+
+            private boolean mRequestNameOnSignUp = false;
+
+            public Builder() {
+                super(EMAIL_PROVIDER);
+            }
+
+            @Override
+            public Builder setPermissions(List<String> permissions) {
+                throw new RuntimeException("Cannot set permissions for email IdpConfig");
+            }
+
+            @Override
+            public Builder setParams(Bundle params) {
+                throw new RuntimeException("Cannot set params for email IdpConfig");
+            }
+
+            public Builder requestNameOnSignUp(boolean requestName) {
+                mRequestNameOnSignUp = requestName;
+                return this;
+            }
+
+            @Override
+            public IdpConfig build() {
+                EmailIdpConfig config = new EmailIdpConfig(EMAIL_PROVIDER, mScopes, mParams);
+                config.setShouldRequestNameOnSignUp(mRequestNameOnSignUp);
+                return config;
+            }
+        }
+    }
+
+    public static class GoogleIdpConfig extends IdpConfig {
+
+        private GoogleIdpConfig(List<String> scopes, Bundle params) {
+            super(GOOGLE_PROVIDER, scopes, params);
+        }
+
+        public static class Builder extends IdpConfig.Builder<GoogleIdpConfig.Builder> {
+
+            public Builder() {
+                super(GOOGLE_PROVIDER);
+            }
+
+        }
+    }
+    public static class FacebookIdpConfig extends IdpConfig {
+
+        private FacebookIdpConfig(List<String> scopes, Bundle params) {
+            super(FACEBOOK_PROVIDER, scopes, params);
+        }
+
+
+        public static class Builder extends IdpConfig.Builder<FacebookIdpConfig.Builder> {
+
+            public Builder() {
+                super(FACEBOOK_PROVIDER);
+            }
+
+        }
+    }
+    public static class TwitterIdpConfig extends IdpConfig {
+
+        private TwitterIdpConfig(List<String> scopes, Bundle params) {
+            super(TWITTER_PROVIDER, scopes, params);
+        }
+
+        public static class Builder extends IdpConfig.Builder<TwitterIdpConfig.Builder> {
+
+            public Builder() {
+                super(TWITTER_PROVIDER);
+            }
+
+        }
+    }
+    public static class PhoneIdpConfig extends IdpConfig {
+
+        private PhoneIdpConfig(List<String> scopes, Bundle params) {
+            super(PHONE_VERIFICATION_PROVIDER, scopes, params);
+        }
+
+        public static class Builder extends IdpConfig.Builder<PhoneIdpConfig.Builder> {
+            public Builder() {
+                super(PHONE_VERIFICATION_PROVIDER);
+            }
+
+            @Override
+            public IdpConfig.Builder<Builder> setPermissions(List<String> permissions) {
+                throw new RuntimeException("Cannot set permissions for phone IdpConfig");
+            }
+
+            @Override
+            public IdpConfig.Builder<Builder> setParams(Bundle params) {
+                throw new RuntimeException("Cannot set params for phone IdpConfig");
+            }
+
+            @Override
+            public IdpConfig.Builder<Builder> setScopes(List<String> scopes) {
+                throw new RuntimeException("Cannot set scopes for phone IdpConfig");
+            }
+        }
+    }
+
+    /**
+     * A group of options that customize the sign-in flow.
+     */
+    public static class FlowDisplayOptions {
+
+        @StyleRes
+        int theme;
+
+        @DrawableRes
+        int logo;
+
+        String tosUrl;
+
+        String privacyPolicyUrl;
+
+        boolean enableHints;
+
+        boolean enableCredentialsSelector;
+
+        FlowDisplayOptions(int theme,
+                           int logo,
+                           String tosUrl,
+                           String privacyPolicyUrl,
+                           boolean enableHints,
+                           boolean enableCredentialsSelector) {
+            this.theme = theme;
+            this.logo = logo;
+            this.tosUrl = tosUrl;
+            this.privacyPolicyUrl = privacyPolicyUrl;
+            this.enableHints = enableHints;
+            this.enableCredentialsSelector = enableCredentialsSelector;
+        }
+
+        public static class Builder {
+
+            @StyleRes
+            private int mTheme = getDefaultTheme();
+
+            @DrawableRes
+            private int mLogo = NO_LOGO;
+
+            private String mTosUrl;
+
+            private String mPrivacyPolicyUrl;
+
+            private boolean mEnableHints = true;
+
+            private boolean mEnableCredentials = true;
+
+            public Builder setTheme(@StyleRes int theme) {
+                mTheme = theme;
+                return this;
+            }
+
+            public Builder setLogo(@DrawableRes int logo) {
+                mLogo = logo;
+                return this;
+            }
+
+            public Builder setTosUrl(String tosUrl) {
+                mTosUrl = tosUrl;
+                return this;
+            }
+
+            public Builder setPrivacyPolicyUrl(String privacyPolicyUrl) {
+                mPrivacyPolicyUrl = privacyPolicyUrl;
+                return this;
+            }
+
+            public Builder enableHints(boolean enableHints) {
+                mEnableHints = enableHints;
+                return this;
+            }
+
+            public Builder enableCredentialsSelector(boolean enableCredentials) {
+                mEnableCredentials = enableCredentials;
+                return this;
+            }
+
+            public FlowDisplayOptions build() {
+                return new FlowDisplayOptions(mTheme, mLogo, mTosUrl, mPrivacyPolicyUrl,
+                        mEnableHints, mEnableCredentials);
             }
         }
     }
@@ -491,7 +701,7 @@ public class AuthUI {
 
                 if (config.getProviderId().equals(FACEBOOK_PROVIDER)) {
                     try {
-                        Class c = com.facebook.FacebookSdk.class;
+                        Class<? extends com.facebook.FacebookSdk> c = com.facebook.FacebookSdk.class;
                     } catch (NoClassDefFoundError e) {
                         throw new RuntimeException(
                                 "Facebook provider cannot be configured " +
@@ -502,7 +712,7 @@ public class AuthUI {
 
                 if (config.getProviderId().equals(TWITTER_PROVIDER)) {
                     try {
-                        Class c = com.twitter.sdk.android.core.TwitterCore.class;
+                        Class<? extends com.twitter.sdk.android.core.TwitterCore> c = com.twitter.sdk.android.core.TwitterCore.class;
                     } catch (NoClassDefFoundError e) {
                         throw new RuntimeException(
                                 "Twitter provider cannot be configured " +
@@ -575,7 +785,7 @@ public class AuthUI {
         @CallSuper
         public Intent build() {
             if (mProviders.isEmpty()) {
-                mProviders.add(new IdpConfig.Builder(EMAIL_PROVIDER).build());
+                mProviders.add(new EmailIdpConfig.Builder().build());
             }
 
             return KickoffActivity.createIntent(mApp.getApplicationContext(), getFlowParams());
@@ -588,7 +798,10 @@ public class AuthUI {
      * Builder for the intent to start the user authentication flow.
      */
     public final class SignInIntentBuilder extends AuthIntentBuilder<SignInIntentBuilder> {
+
         private boolean mAllowNewEmailAccounts = true;
+
+        private FlowDisplayOptions mDisplayOptions;
 
         private SignInIntentBuilder() {
             super();
@@ -604,17 +817,25 @@ public class AuthUI {
             return this;
         }
 
+        /**
+         * Sets customized display features for the sign in flow.
+         */
+        public SignInIntentBuilder setDisplayOptions(FlowDisplayOptions options) {
+            mDisplayOptions = options;
+            return this;
+        }
+
         @Override
         protected FlowParameters getFlowParams() {
             return new FlowParameters(
                     mApp.getName(),
                     mProviders,
-                    mTheme,
-                    mLogo,
-                    mTosUrl,
-                    mPrivacyPolicyUrl,
-                    mEnableCredentials,
-                    mEnableHints,
+                    mDisplayOptions.theme,
+                    mDisplayOptions.logo,
+                    mDisplayOptions.tosUrl,
+                    mDisplayOptions.privacyPolicyUrl,
+                    mDisplayOptions.enableCredentialsSelector,
+                    mDisplayOptions.enableHints,
                     mAllowNewEmailAccounts);
         }
     }
