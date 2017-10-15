@@ -15,6 +15,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.firebase.ui.auth.AuthUI;
 import com.firebase.ui.auth.IdpResponse;
 import com.firebase.ui.auth.R;
 import com.firebase.ui.auth.User;
@@ -25,12 +26,12 @@ import com.firebase.ui.auth.ui.FragmentBase;
 import com.firebase.ui.auth.ui.HelperActivityBase;
 import com.firebase.ui.auth.ui.ImeHelper;
 import com.firebase.ui.auth.ui.TaskFailureLogger;
-import com.firebase.ui.auth.util.accountlink.ProfileMerger;
 import com.firebase.ui.auth.ui.accountlink.WelcomeBackIdpPrompt;
 import com.firebase.ui.auth.ui.accountlink.WelcomeBackPasswordPrompt;
 import com.firebase.ui.auth.ui.email.fieldvalidators.EmailFieldValidator;
 import com.firebase.ui.auth.ui.email.fieldvalidators.PasswordFieldValidator;
 import com.firebase.ui.auth.ui.email.fieldvalidators.RequiredFieldValidator;
+import com.firebase.ui.auth.util.accountlink.ProfileMerger;
 import com.firebase.ui.auth.util.signincontainer.SaveSmartLock;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -59,6 +60,7 @@ public class RegisterEmailFragment extends FragmentBase implements
     private EditText mPasswordEditText;
     private TextView mAgreementText;
     private TextInputLayout mEmailInput;
+    private TextInputLayout mNameLayout;
     private TextInputLayout mPasswordInput;
 
     private EmailFieldValidator mEmailFieldValidator;
@@ -103,13 +105,13 @@ public class RegisterEmailFragment extends FragmentBase implements
         mPasswordEditText = v.findViewById(R.id.password);
         mAgreementText = v.findViewById(R.id.create_account_text);
         mEmailInput = v.findViewById(R.id.email_layout);
+        mNameLayout = v.findViewById(R.id.name_layout);
         mPasswordInput = v.findViewById(R.id.password_layout);
 
         mPasswordFieldValidator = new PasswordFieldValidator(
                 mPasswordInput,
                 getResources().getInteger(R.integer.fui_min_password_length));
-        mNameValidator = new RequiredFieldValidator(
-                (TextInputLayout) v.findViewById(R.id.name_layout));
+        mNameValidator = new RequiredFieldValidator(mNameLayout);
         mEmailFieldValidator = new EmailFieldValidator(mEmailInput);
 
         ImeHelper.setImeOnDoneListener(mPasswordEditText, this);
@@ -146,6 +148,11 @@ public class RegisterEmailFragment extends FragmentBase implements
             safeRequestFocus(mNameEditText);
         } else {
             safeRequestFocus(mEmailEditText);
+        }
+
+        if (!shouldRequestName()) {
+            // We're showing the field by default
+            mNameLayout.setVisibility(View.GONE);
         }
 
         return v;
@@ -194,7 +201,10 @@ public class RegisterEmailFragment extends FragmentBase implements
         if (id == R.id.email) {
             mEmailFieldValidator.validate(mEmailEditText.getText());
         } else if (id == R.id.name) {
-            mNameValidator.validate(mNameEditText.getText());
+            if (shouldRequestName()) {
+                // Don't validate the name if sign in flow doesn't request it
+                mNameValidator.validate(mNameEditText.getText());
+            }
         } else if (id == R.id.password) {
             mPasswordFieldValidator.validate(mPasswordEditText.getText());
         }
@@ -220,18 +230,19 @@ public class RegisterEmailFragment extends FragmentBase implements
         boolean emailValid = mEmailFieldValidator.validate(email);
         boolean passwordValid = mPasswordFieldValidator.validate(password);
         boolean nameValid = mNameValidator.validate(name);
-        if (emailValid && passwordValid && nameValid) {
+        if (emailValid && passwordValid && (nameValid && shouldRequestName())) {
             getDialogHolder().showLoadingDialog(R.string.fui_progress_dialog_signing_up);
             registerUser(email, name, password);
         }
     }
 
     private void registerUser(final String email, final String name, final String password) {
-        final IdpResponse response = new IdpResponse.Builder(
-                new User.Builder(EmailAuthProvider.PROVIDER_ID, email)
-                        .setName(name)
-                        .setPhotoUri(mUser.getPhotoUri())
-                        .build())
+        User.Builder userBuilder = new User.Builder(EmailAuthProvider.PROVIDER_ID, email)
+                .setPhotoUri(mUser.getPhotoUri());
+        if (name != null) {
+            userBuilder.setName(name);
+        }
+        final IdpResponse response = new IdpResponse.Builder(userBuilder.build())
                 .build();
 
         getAuthHelper().getFirebaseAuth()
@@ -316,5 +327,15 @@ public class RegisterEmailFragment extends FragmentBase implements
                         getDialogHolder().dismissDialog();
                     }
                 });
+    }
+
+    private boolean shouldRequestName() {
+        boolean requestName = false;
+        for (AuthUI.IdpConfig config : getFlowParams().providerInfo) {
+            if (config instanceof AuthUI.EmailIdpConfig) {
+                requestName = ((AuthUI.EmailIdpConfig) config).shouldRequestNameOnSignUp();
+            }
+        }
+        return requestName;
     }
 }
