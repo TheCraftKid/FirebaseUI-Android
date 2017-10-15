@@ -32,7 +32,12 @@ import android.widget.RadioButton;
 import android.widget.TextView;
 
 import com.firebase.ui.auth.AuthUI;
+import com.firebase.ui.auth.AuthUI.EmailIdpConfig;
+import com.firebase.ui.auth.AuthUI.FacebookIdpConfig;
+import com.firebase.ui.auth.AuthUI.GoogleIdpConfig;
 import com.firebase.ui.auth.AuthUI.IdpConfig;
+import com.firebase.ui.auth.AuthUI.PhoneIdpConfig;
+import com.firebase.ui.auth.AuthUI.TwitterIdpConfig;
 import com.firebase.ui.auth.ErrorCodes;
 import com.firebase.ui.auth.IdpResponse;
 import com.firebase.uidemo.R;
@@ -137,6 +142,9 @@ public class AuthUiActivity extends AppCompatActivity {
     @BindView(R.id.google_scope_youtube_data)
     CheckBox mGoogleScopeYoutubeData;
 
+    @BindView(R.id.request_name_new_account)
+    CheckBox mRequestNameForNewAccount;
+
     public static Intent createIntent(Context context) {
         return new Intent(context, AuthUiActivity.class);
     }
@@ -199,14 +207,15 @@ public class AuthUiActivity extends AppCompatActivity {
     public void signIn(View view) {
         startActivityForResult(
                 AuthUI.getInstance().createSignInIntentBuilder()
-                        .setTheme(getSelectedTheme())
-                        .setLogo(getSelectedLogo())
+                        .setDisplayOptions(new AuthUI.FlowDisplayOptions.Builder()
+                                .setTheme(getSelectedTheme())
+                                .setLogo(getSelectedLogo())
+                                .setTosUrl(getSelectedTosUrl())
+                                .setPrivacyPolicyUrl(getSelectedPrivacyPolicyUrl()).build())
                         .setAvailableProviders(getSelectedProviders())
-                        .setTosUrl(getSelectedTosUrl())
-                        .setPrivacyPolicyUrl(getSelectedPrivacyPolicyUrl())
+                        .setAllowNewEmailAccounts(mAllowNewEmailAccounts.isChecked())
                         .setIsSmartLockEnabled(mEnableCredentialSelector.isChecked(),
                                 mEnableHintSelector.isChecked())
-                        .setAllowNewEmailAccounts(mAllowNewEmailAccounts.isChecked())
                         .build(),
                 RC_SIGN_IN);
     }
@@ -316,29 +325,28 @@ public class AuthUiActivity extends AppCompatActivity {
 
         if (mUseGoogleProvider.isChecked()) {
             selectedProviders.add(
-                    new IdpConfig.Builder(AuthUI.GOOGLE_PROVIDER)
+                    new GoogleIdpConfig.Builder()
                             .setPermissions(getGooglePermissions())
                             .build());
         }
 
         if (mUseFacebookProvider.isChecked()) {
             selectedProviders.add(
-                    new IdpConfig.Builder(AuthUI.FACEBOOK_PROVIDER)
+                    new FacebookIdpConfig.Builder()
                             .setPermissions(getFacebookPermissions())
                             .build());
         }
 
         if (mUseTwitterProvider.isChecked()) {
-            selectedProviders.add(new IdpConfig.Builder(AuthUI.TWITTER_PROVIDER).build());
+            selectedProviders.add(new TwitterIdpConfig.Builder().build());
         }
 
         if (mUseEmailProvider.isChecked()) {
-            selectedProviders.add(new IdpConfig.Builder(AuthUI.EMAIL_PROVIDER).build());
+            selectedProviders.add(new EmailIdpConfig.Builder().build());
         }
 
         if (mUsePhoneProvider.isChecked()) {
-            selectedProviders.add(
-                    new IdpConfig.Builder(AuthUI.PHONE_VERIFICATION_PROVIDER).build());
+            selectedProviders.add(new PhoneIdpConfig.Builder().build());
         }
 
         return selectedProviders;
@@ -360,6 +368,11 @@ public class AuthUiActivity extends AppCompatActivity {
         }
 
         return FIREBASE_PRIVACY_POLICY_URL;
+    }
+
+    @MainThread
+    private boolean getShouldRequestName() {
+        return mRequestNameForNewAccount.isChecked();
     }
 
     @MainThread
